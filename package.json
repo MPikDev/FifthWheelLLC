@@ -1,0 +1,39 @@
+{
+  "name": "fifthwheelllc",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Marketing website and quote server for Fifth Wheel LLC, a car transportation company.",
+  "type": "module",
+  "workspaces": [
+    "server"
+  ],
+  "engines": {
+    "node": ">=20.12"
+  },
+  "scripts": {
+    "dev": "concurrently -k -n web,api -c yellow,cyan \"npm:dev:web\" \"npm:dev:server\"",
+    "dev:web": "vite",
+    "dev:server": "npm run dev --workspace server",
+    "build": "npm run build:web && npm run build:server",
+    "build:web": "tsc -b && vite build",
+    "build:server": "npm run build --workspace server",
+    "start": "npm run start --workspace server",
+    "preview": "vite preview",
+    "typecheck": "tsc -b && npm run typecheck --workspace server"
+  },
+  "dependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router": "^7.6.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.8",
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.1.5",
+    "@vitejs/plugin-react": "^4.5.0",
+    "concurrently": "^9.1.2",
+    "tailwindcss": "^4.1.8",
+    "typescript": "~5.8.3",
+    "vite": "^6.3.5"
+  }
+}

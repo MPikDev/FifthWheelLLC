@@ -7,6 +7,25 @@
  * be compiled for both the browser and Node.
  */
 
+/**
+ * Text-message consent. This exact wording is shown next to the checkbox on
+ * the quote form AND copied into the dispatch email as the consent record, so
+ * edit it here only. Keep the message types in sync with the use case
+ * registered with RingCentral (10DLC).
+ */
+export const SMS_MESSAGE_TYPES =
+  'quote follow-ups, pickup and delivery scheduling, shipment status updates, and replies to your questions';
+
+export const SMS_CONSENT_TEXT =
+  `I agree to receive text messages from Fifth Wheel LLC at the phone number provided, including ${SMS_MESSAGE_TYPES}. ` +
+  'Consent is not a condition of purchase. Message frequency varies. Message and data rates may apply. ' +
+  'Reply STOP to opt out at any time. Reply HELP for help.';
+
+/** Bump when SMS_CONSENT_TEXT changes, so each consent record shows which wording was agreed to. */
+export const SMS_CONSENT_VERSION = '2026-11-16';
+
+export const SMS_CONSENT_OPTIONS = ['yes'] as const;
+
 export const CONTACT_METHODS = ['email', 'text'] as const;
 export type ContactMethod = (typeof CONTACT_METHODS)[number];
 
@@ -47,6 +66,8 @@ export interface QuoteRequest {
   serviceType: ServiceType | '';
   pickupDate: string;
   notes: string;
+  /** 'yes' when the optional SMS consent checkbox is checked; '' otherwise. */
+  smsConsent: (typeof SMS_CONSENT_OPTIONS)[number] | '';
   /**
    * Honeypot: hidden from people, so any value here means a bot filled it in.
    * Deliberately not named like a real field (e.g. "company") so browser
@@ -73,6 +94,7 @@ export const EMPTY_QUOTE: QuoteRequest = {
   serviceType: '',
   pickupDate: '',
   notes: '',
+  smsConsent: '',
   honeypot: '',
 };
 
@@ -154,6 +176,11 @@ export function validateQuote(q: QuoteRequest, minDate: string = todayISO()): Qu
   }
   if (!includes(SERVICE_TYPES, q.serviceType)) {
     errors.serviceType = 'Please choose a service type.';
+  }
+
+  // SMS consent is optional, so the only invalid value is an unexpected one.
+  if (q.smsConsent && !includes(SMS_CONSENT_OPTIONS, q.smsConsent)) {
+    errors.smsConsent = 'Please check or uncheck the text message box.';
   }
 
   if (q.vehicleYear) {

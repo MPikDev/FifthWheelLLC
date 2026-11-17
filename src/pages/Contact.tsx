@@ -1,3 +1,4 @@
+import { Link } from 'react-router';
 import FadeIn from '../components/FadeIn';
 import Icon from '../components/Icon';
 import PageHero from '../components/PageHero';
@@ -78,6 +79,19 @@ export default function Contact() {
                   </address>
                 </li>
               </ul>
+              {/* Consent statement for people who text us first (required for SMS registration). */}
+              <p className="mt-6 border-t border-white/10 pt-4 text-xs leading-relaxed text-navy-200">
+                By texting {site.name} at {site.phone}, you agree to receive text messages about your quote or shipment.
+                Message frequency varies. Message and data rates may apply. Reply STOP to opt out, HELP for help. See our{' '}
+                <Link to="/privacy" className="underline hover:text-white">
+                  Privacy Policy
+                </Link>{' '}
+                and{' '}
+                <Link to="/terms" className="underline hover:text-white">
+                  Terms
+                </Link>
+                .
+              </p>
             </div>
 
             <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 sm:p-8">

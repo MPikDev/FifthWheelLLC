@@ -77,6 +77,8 @@ All settings live in `.env` (never committed). See `.env.example` for the full l
 | Sample reviews (clearly tagged "Sample review") | `src/content/reviews.ts` — use real reviews and set `sample: false` |
 | Company story | `src/pages/About.tsx` (marked `PLACEHOLDER`) |
 | Payment terms | `src/content/faqs.tsx` (marked `PLACEHOLDER`) |
+| "Under construction" banner (turn off with `underConstruction: false`) | `src/config/site.ts` |
+| Privacy Policy and Terms of Service (have them reviewed; keep SMS message types in sync with your RingCentral registration) | `src/pages/Privacy.tsx`, `src/pages/Terms.tsx`, `SMS_MESSAGE_TYPES` in `shared/quote.ts` |
 
 Also double-check the service and FAQ copy (`src/content/`) matches how you actually operate, such as transit
 times and insurance details.

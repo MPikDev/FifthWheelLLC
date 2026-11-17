@@ -2,7 +2,7 @@
  * Builds and sends the "New Quote Request" email to dispatch.
  */
 import nodemailer, { type Transporter } from 'nodemailer';
-import { LABELS, type QuoteRequest } from '../../shared/quote.js';
+import { LABELS, SMS_CONSENT_TEXT, SMS_CONSENT_VERSION, type QuoteRequest } from '../../shared/quote.js';
 import { config, smtpConfigured } from './config.js';
 
 let transporter: Transporter | undefined;
@@ -43,14 +43,27 @@ function formatDate(iso: string): string {
 /** Keep the subject on one line and reasonably short. */
 const oneLine = (value: string) => value.replace(/\s+/g, ' ').slice(0, 60);
 
-export function buildQuoteEmail(q: QuoteRequest) {
+/** Details about the submission itself, recorded as proof of SMS consent. */
+export interface SubmissionMeta {
+  ip?: string;
+  userAgent?: string;
+  submittedAt?: Date;
+}
+
+export function buildQuoteEmail(q: QuoteRequest, meta: SubmissionMeta = {}) {
+  const submittedAt = meta.submittedAt ?? new Date();
+  const smsOk = q.smsConsent === 'yes';
   const contactLabel = q.contactMethod ? LABELS.contactMethod[q.contactMethod] : '';
   const vehicleType = q.vehicleType ? LABELS.vehicleType[q.vehicleType] : '';
   const runs = q.runs ? LABELS.runs[q.runs] : '';
   const service = q.serviceType ? LABELS.serviceType[q.serviceType] : '';
   const vehicle = `${q.vehicleYear} ${q.vehicleMake} ${q.vehicleModel}`;
   const replyHow =
-    q.contactMethod === 'text' ? `TEXT the customer at ${q.phone}` : `EMAIL the customer at ${q.email}`;
+    q.contactMethod === 'text'
+      ? smsOk
+        ? `TEXT the customer at ${q.phone}`
+        : `CALL or EMAIL the customer (${q.phone} / ${q.email}). They chose text but did NOT agree to receive texts, so do not text them`
+      : `EMAIL the customer at ${q.email}`;
 
   const notes: string[] = [];
   if (q.vehicleType === 'motorcycle') notes.push('Motorcycle — additional fee applies.');
@@ -71,15 +84,31 @@ export function buildQuoteEmail(q: QuoteRequest) {
     ['Service', service],
     ['Preferred pickup date', formatDate(q.pickupDate)],
     ['Notes', q.notes || '—'],
+    ['SMS consent', smsOk ? 'YES (agreed on the website quote form; see record below)' : 'No (do not text this number)'],
   ];
+
+  // Proof of consent, kept with the quote email. Carriers require businesses to log SMS opt-ins.
+  const consentRecord: [string, string][] = smsOk
+    ? [
+        ['Phone number', q.phone],
+        ['Agreed at', submittedAt.toISOString()],
+        ['IP address', meta.ip || 'unknown'],
+        ['Browser', meta.userAgent || 'unknown'],
+        ['Wording version', SMS_CONSENT_VERSION],
+        ['Wording agreed to', SMS_CONSENT_TEXT],
+      ]
+    : [];
 
   const text = [
     `>>> PREFERRED CONTACT: ${contactLabel.toUpperCase()} — please ${replyHow}`,
     ...(notes.length ? ['', ...notes.map((n) => `!! ${n}`)] : []),
     '',
     ...rows.map(([label, value]) => `${label}: ${value}`),
+    ...(consentRecord.length
+      ? ['', '--- SMS consent record ---', ...consentRecord.map(([label, value]) => `${label}: ${value}`)]
+      : []),
     '',
-    `Submitted ${new Date().toLocaleString('en-US')}`,
+    `Submitted ${submittedAt.toLocaleString('en-US')}`,
   ].join('\n');
 
   const html = `<!doctype html>
@@ -113,6 +142,14 @@ export function buildQuoteEmail(q: QuoteRequest) {
           )
           .join('')}
       </table>
+      ${
+        consentRecord.length
+          ? `<div style="margin-top:20px;padding:12px 16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;font-size:13px;color:#475569;">
+        <div style="font-weight:bold;color:#0f172a;margin-bottom:6px;">SMS consent record (keep for compliance)</div>
+        ${consentRecord.map(([label, value]) => `<div><strong>${escapeHtml(label)}:</strong> ${escapeHtml(value)}</div>`).join('')}
+      </div>`
+          : ''
+      }
       <p style="font-size:12px;color:#94a3b8;margin:16px 0 0;">Sent from the quote form on the Fifth Wheel LLC website.</p>
     </td></tr>
   </table>
@@ -121,13 +158,13 @@ export function buildQuoteEmail(q: QuoteRequest) {
   return { subject, text, html };
 }
 
-export async function sendQuoteEmail(q: QuoteRequest): Promise<void> {
+export async function sendQuoteEmail(q: QuoteRequest, meta: SubmissionMeta = {}): Promise<void> {
   if (config.isProduction && !smtpConfigured) {
     // Never pretend a quote went through when it can't reach dispatch.
     throw new Error('SMTP is not configured: set SMTP_HOST and DISPATCH_EMAIL in .env');
   }
 
-  const { subject, text, html } = buildQuoteEmail(q);
+  const { subject, text, html } = buildQuoteEmail(q, meta);
   await getTransporter().sendMail({
     from: config.mailFrom,
     to: config.dispatchEmail || 'dispatch@example.com',

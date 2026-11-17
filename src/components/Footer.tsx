@@ -72,7 +72,14 @@ export default function Footer() {
       <div className="border-t border-white/10">
         <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-6 text-xs text-navy-300 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
           <p>
-            &copy; {year} {site.name}. All rights reserved.
+            &copy; {year} {site.name}. All rights reserved. <span aria-hidden="true">·</span>{' '}
+            <Link to="/privacy" className="rounded underline hover:text-white">
+              Privacy Policy
+            </Link>{' '}
+            <span aria-hidden="true">·</span>{' '}
+            <Link to="/terms" className="rounded underline hover:text-white">
+              Terms of Service
+            </Link>
           </p>
           <p>
             {site.usdot} <span aria-hidden="true">·</span> {site.mc} <span aria-hidden="true">·</span>{' '}

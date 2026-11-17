@@ -1,3 +1,5 @@
+import { SMS_MESSAGE_TYPES } from '../../shared/quote';
+
 /**
  * Business details used across the whole site (header, footer, contact page,
  * quote form fallback, SEO). Update the placeholders here and every page picks
@@ -45,6 +47,26 @@ export const site = {
   mc: 'MC-673472',
   saferUrl:
     'https://safer.fmcsa.dot.gov/query.asp?searchtype=ANY&query_type=queryCarrierSnapshot&query_param=USDOT&query_string=1862043',
+
+  /**
+   * Show the "still under construction" banner at the top of every page.
+   * Set to false once the content is final (and before submitting SMS/10DLC
+   * registration, since reviewers check the live site).
+   */
+  underConstruction: true,
+
+  /** Effective date shown on the Privacy Policy and Terms of Service. */
+  legalEffectiveDate: 'November 16, 2026',
+
+  /**
+   * Text-message program details, used by the quote form consent checkbox,
+   * the Privacy Policy and the Terms of Service. Keep `messageTypes` in sync
+   * with the use case registered with RingCentral.
+   */
+  sms: {
+    programName: 'Fifth Wheel LLC Customer Updates',
+    messageTypes: SMS_MESSAGE_TYPES,
+  },
 
   /** Default SEO description, used when a page doesn't set its own. */
   description:

@@ -5,6 +5,7 @@ import {
   LABELS,
   RUNS_OPTIONS,
   SERVICE_TYPES,
+  SMS_CONSENT_TEXT,
   VEHICLE_TYPES,
   hasExtraFee,
   todayISO,
@@ -13,6 +14,7 @@ import {
   type QuoteField,
   type QuoteRequest,
 } from '../../shared/quote';
+import { Link } from 'react-router';
 import { site } from '../config/site';
 import Button from './Button';
 import Icon from './Icon';
@@ -25,6 +27,7 @@ const FIELD_ORDER: QuoteField[] = [
   'email',
   'phone',
   'contactMethod',
+  'smsConsent',
   'pickup',
   'delivery',
   'vehicleYear',
@@ -206,6 +209,48 @@ export default function QuoteForm() {
           error={errors.contactMethod}
           onChange={update}
         />
+
+        {/* Optional SMS consent (required wording for carrier / 10DLC registration). Unchecked by default. */}
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <label htmlFor="quote-smsConsent" className="flex cursor-pointer items-start gap-3 text-sm leading-relaxed text-slate-700">
+            <input
+              id="quote-smsConsent"
+              type="checkbox"
+              name="smsConsent"
+              checked={values.smsConsent === 'yes'}
+              onChange={(e) => update('smsConsent', e.target.checked ? 'yes' : '')}
+              aria-describedby="quote-smsConsent-links"
+              aria-invalid={errors.smsConsent ? true : undefined}
+              className="mt-1 size-4 shrink-0 accent-navy-900"
+            />
+            <span>
+              <span className="font-semibold text-navy-900">Text me about my quote and shipment (optional). </span>
+              {SMS_CONSENT_TEXT}
+            </span>
+          </label>
+          <p id="quote-smsConsent-links" className="mt-2 pl-7 text-sm text-slate-600">
+            See our{' '}
+            <Link to="/privacy" target="_blank" rel="noopener" className="font-semibold text-navy-700 underline hover:text-accent-700">
+              Privacy Policy<span className="sr-only"> (opens in a new tab)</span>
+            </Link>{' '}
+            and{' '}
+            <Link to="/terms" target="_blank" rel="noopener" className="font-semibold text-navy-700 underline hover:text-accent-700">
+              Terms of Service<span className="sr-only"> (opens in a new tab)</span>
+            </Link>
+            .
+          </p>
+          {errors.smsConsent && <ErrorText id="quote-smsConsent-error">{errors.smsConsent}</ErrorText>}
+        </div>
+
+        {/* If they prefer texts but haven't agreed to receive them, say how we'll reach them instead. */}
+        <div aria-live="polite">
+          {values.contactMethod === 'text' && values.smsConsent !== 'yes' && (
+            <p className="flex gap-3 rounded-lg border border-navy-100 bg-navy-50 p-4 text-sm text-navy-900">
+              <Icon name="info" className="size-5 shrink-0 text-navy-700" />
+              <span>To get your quote by text, check the box above. Otherwise we’ll follow up by email or phone.</span>
+            </p>
+          )}
+        </div>
       </FormGroup>
 
       {/* Route */}
@@ -306,7 +351,7 @@ export default function QuoteForm() {
         <Button type="submit" size="lg" disabled={status === 'submitting'}>
           {status === 'submitting' ? 'Sending…' : 'Get My Free Quote'}
         </Button>
-        <p className="text-sm text-slate-500">No obligation. We never share your information.</p>
+        <p className="text-sm text-slate-500">No obligation. We never sell your information.</p>
       </div>
     </form>
   );

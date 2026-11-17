@@ -9,7 +9,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import express, { type NextFunction, type Request, type Response } from 'express';
 import rateLimit from 'express-rate-limit';
-import { normalizeQuote, todayISO, validateQuote } from '../../shared/quote.js';
+import { SMS_CONSENT_VERSION, normalizeQuote, todayISO, validateQuote } from '../../shared/quote.js';
 import { config, smtpConfigured } from './config.js';
 import { sendQuoteEmail } from './mailer.js';
 
@@ -57,9 +57,20 @@ app.post('/api/quote', quoteLimiter, async (req: Request, res: Response) => {
     return;
   }
 
+  const meta = { ip: req.ip, userAgent: req.get('user-agent'), submittedAt: new Date() };
+
+  // Second copy of the SMS opt-in record in the server log (journalctl -u fifthwheelllc).
+  if (quote.smsConsent === 'yes') {
+    console.log(
+      `[sms-consent] opt-in phone=${quote.phone} ip=${meta.ip} at=${meta.submittedAt.toISOString()} wording=${SMS_CONSENT_VERSION}`,
+    );
+  }
+
   try {
-    await sendQuoteEmail(quote);
-    console.log(`[quote] Request sent: ${quote.pickup} -> ${quote.delivery} (${quote.contactMethod})`);
+    await sendQuoteEmail(quote, meta);
+    console.log(
+      `[quote] Request sent: ${quote.pickup} -> ${quote.delivery} (${quote.contactMethod}, sms consent: ${quote.smsConsent === 'yes' ? 'yes' : 'no'})`,
+    );
     res.json({ ok: true });
   } catch (err) {
     console.error('[quote] Failed to send email:', err);

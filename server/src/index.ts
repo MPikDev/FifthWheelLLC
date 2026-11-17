@@ -103,7 +103,7 @@ app.use((err: Error & { status?: number }, _req: Request, res: Response, _next: 
   res.status(status).json({ ok: false, error: status === 500 ? 'Something went wrong.' : 'Bad request.' });
 });
 
-app.listen(config.port, () => {
+app.listen(config.port, '127.0.0.1', () => {
   console.log(`[server] Listening on http://localhost:${config.port} (${config.isProduction ? 'production' : 'development'})`);
   if (!smtpConfigured) {
     console.warn(

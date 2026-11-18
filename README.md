@@ -71,13 +71,13 @@ All settings live in `.env` (never committed). See `.env.example` for the full l
 
 | What | Where |
 | --- | --- |
-| Email and business hours (phone, address, USDOT/MC are filled in from the FMCSA SAFER record) | `src/config/site.ts` (one file, used site-wide) |
+| Business hours (phone, address, USDOT/MC are filled in from the FMCSA SAFER record) | `src/config/site.ts` (one file, used site-wide) |
 | Logo | `public/logo.png` |
 | Photos (placeholder illustrations for now) | `public/images/`, then update `src/config/images.ts` |
-| Sample reviews (clearly tagged "Sample review") | `src/content/reviews.ts` — use real reviews and set `sample: false` |
+| Customer reviews (none yet; the Reviews page and home section stay hidden until you add some) | `src/content/reviews.ts` |
 | Company story | `src/pages/About.tsx` (marked `PLACEHOLDER`) |
 | Payment terms | `src/content/faqs.tsx` (marked `PLACEHOLDER`) |
-| "Under construction" banner (turn off with `underConstruction: false`) | `src/config/site.ts` |
+| Online quote form is off (submitting shows a "coming soon" popup); turn on with `quoteFormEnabled: true` once SMTP works | `src/config/site.ts` |
 | Privacy Policy and Terms of Service (have them reviewed; keep SMS message types in sync with your RingCentral registration) | `src/pages/Privacy.tsx`, `src/pages/Terms.tsx`, `SMS_MESSAGE_TYPES` in `shared/quote.ts` |
 
 Also double-check the service and FAQ copy (`src/content/`) matches how you actually operate, such as transit

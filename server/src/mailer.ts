@@ -167,7 +167,7 @@ export async function sendQuoteEmail(q: QuoteRequest, meta: SubmissionMeta = {})
   const { subject, text, html } = buildQuoteEmail(q, meta);
   await getTransporter().sendMail({
     from: config.mailFrom,
-    to: config.dispatchEmail || 'dispatch@example.com',
+    to: config.dispatchEmail || 'fifth-wheel@hotmail.com',
     replyTo: `${q.name.replace(/[<>"]/g, '')} <${q.email}>`,
     subject,
     text,

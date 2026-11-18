@@ -1,11 +1,12 @@
 import { SMS_MESSAGE_TYPES } from '../../shared/quote';
+import { reviews } from '../content/reviews';
 
 /**
  * Business details used across the whole site (header, footer, contact page,
  * quote form fallback, SEO). Update the placeholders here and every page picks
  * up the change.
  *
- * TODO before launch: replace every value still marked PLACEHOLDER (email and hours).
+ * TODO before launch: replace every value still marked PLACEHOLDER (hours).
  */
 export const site = {
   name: 'Fifth Wheel LLC',
@@ -16,8 +17,7 @@ export const site = {
   phone: '(509) 381-0090',
   phoneHref: 'tel:+15093810090',
 
-  /** PLACEHOLDER */
-  email: 'dispatch@fifthwheelllc.example',
+  email: 'fifth-wheel@hotmail.com',
 
   /** Office address. (From FMCSA SAFER record.) */
   address: {
@@ -49,11 +49,11 @@ export const site = {
     'https://safer.fmcsa.dot.gov/query.asp?searchtype=ANY&query_type=queryCarrierSnapshot&query_param=USDOT&query_string=1862043',
 
   /**
-   * Show the "still under construction" banner at the top of every page.
-   * Set to false once the content is final (and before submitting SMS/10DLC
-   * registration, since reviewers check the live site).
+   * Online quote requests. While false, submitting the quote form shows a
+   * "not available yet" popup (with call / email options) instead of sending.
+   * Set to true once SMTP is configured and tested on the server.
    */
-  underConstruction: true,
+  quoteFormEnabled: false,
 
   /** Effective date shown on the Privacy Policy and Terms of Service. */
   legalEffectiveDate: 'November 16, 2026',
@@ -73,7 +73,7 @@ export const site = {
     'Spokane, WA-based Fifth Wheel LLC moves cars, trucks, SUVs and motorcycles nationwide with open, door-to-door and terminal-to-terminal transport. Get a free quote today.',
 } as const;
 
-/** Main navigation, used by the header and footer. */
+/** Main navigation, used by the header and footer. The Reviews link is hidden until there are reviews. */
 export const navLinks = [
   { to: '/', label: 'Home' },
   { to: '/services', label: 'Services' },
@@ -82,7 +82,7 @@ export const navLinks = [
   { to: '/reviews', label: 'Reviews' },
   { to: '/faq', label: 'FAQ' },
   { to: '/contact', label: 'Contact' },
-] as const;
+].filter((link) => link.to !== '/reviews' || reviews.length > 0);
 
 /** Where every "Get a Quote" button points. */
 export const QUOTE_PATH = '/contact#quote';

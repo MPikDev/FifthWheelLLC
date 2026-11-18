@@ -37,7 +37,7 @@ export const config = {
   isProduction: process.env.NODE_ENV === 'production',
   port: num('PORT', 3001),
   dispatchEmail: env('DISPATCH_EMAIL'),
-  mailFrom: env('MAIL_FROM', 'Fifth Wheel Website <no-reply@example.com>'),
+  mailFrom: env('MAIL_FROM', 'Fifth Wheel Website <fifth-wheel@hotmail.com>'),
   smtp: {
     host: env('SMTP_HOST'),
     port: num('SMTP_PORT', 587),

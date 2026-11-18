@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router';
-import ConstructionBanner from './ConstructionBanner';
 import Footer from './Footer';
 import Header from './Header';
 
@@ -37,7 +36,6 @@ export default function Layout() {
       >
         Skip to main content
       </a>
-      <ConstructionBanner />
       <Header />
       <main id="main" tabIndex={-1} className="flex-1 focus:outline-none">
         <Outlet />

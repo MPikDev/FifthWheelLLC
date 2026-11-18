@@ -1,4 +1,4 @@
-import { useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react';
+import { useRef, useState, type ChangeEvent, type FormEvent, type ReactNode, type RefObject } from 'react';
 import {
   CONTACT_METHODS,
   EMPTY_QUOTE,
@@ -52,6 +52,7 @@ export default function QuoteForm() {
   const [status, setStatus] = useState<Status>('idle');
   const [serverMessage, setServerMessage] = useState('');
   const formRef = useRef<HTMLFormElement>(null);
+  const unavailableRef = useRef<HTMLDialogElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
 
   const extraFee = hasExtraFee(values);
@@ -75,6 +76,13 @@ export default function QuoteForm() {
 
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    // Online quotes aren't switched on yet: explain, and offer call / email instead.
+    if (!site.quoteFormEnabled) {
+      unavailableRef.current?.showModal();
+      return;
+    }
+
     setSubmitted(true);
 
     const errs = validateQuote(values);
@@ -155,205 +163,290 @@ export default function QuoteForm() {
   });
 
   return (
-    <form ref={formRef} onSubmit={onSubmit} noValidate className="relative space-y-8" aria-describedby="quote-required-note">
-      <p id="quote-required-note" className="text-sm text-slate-500">
-        Fields marked <span className="font-bold text-red-700">*</span> are required.
-      </p>
+    <>
+      <form ref={formRef} onSubmit={onSubmit} noValidate className="relative space-y-8" aria-describedby="quote-required-note">
+        <p id="quote-required-note" className="text-sm text-slate-500">
+          Fields marked <span className="font-bold text-red-700">*</span> are required.
+        </p>
 
-      {submitted && errorCount > 0 && (
-        <div role="alert" className="flex gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-          <Icon name="alert" className="size-5 shrink-0" />
-          <p>
-            Please fix {errorCount === 1 ? 'the highlighted field' : `the ${errorCount} highlighted fields`} below.
-          </p>
-        </div>
-      )}
-
-      {status === 'error' && (
-        <div
-          ref={resultRef}
-          tabIndex={-1}
-          role="alert"
-          className="rounded-lg border border-red-200 bg-red-50 p-5 text-red-900 focus:outline-none"
-        >
-          <p className="font-bold">Sorry, we couldn’t send your request.</p>
-          <p className="mt-1">
-            {serverMessage && `${serverMessage} `}
-            Please try again in a moment, or call us at{' '}
-            <a href={site.phoneHref} className="font-bold underline">
-              {site.phone}
-            </a>{' '}
-            and we’ll get your quote started over the phone.
-          </p>
-        </div>
-      )}
-
-      {/* About you */}
-      <FormGroup legend="About you">
-        <div className="grid gap-5 sm:grid-cols-2">
-          <Field label="Full name" field="name" error={errors.name} required className="sm:col-span-2">
-            <input type="text" autoComplete="name" {...fieldProps('name')} />
-          </Field>
-          <Field label="Email" field="email" error={errors.email} required>
-            <input type="email" autoComplete="email" inputMode="email" {...fieldProps('email')} />
-          </Field>
-          <Field label="Phone" field="phone" error={errors.phone} required>
-            <input type="tel" autoComplete="tel" inputMode="tel" placeholder="(555) 555-5555" {...fieldProps('phone')} />
-          </Field>
-        </div>
-        <RadioGroup
-          field="contactMethod"
-          legend="How should we contact you?"
-          options={CONTACT_METHODS.map((v) => ({ value: v, label: LABELS.contactMethod[v] }))}
-          value={values.contactMethod}
-          error={errors.contactMethod}
-          onChange={update}
-        />
-
-        {/* Optional SMS consent (required wording for carrier / 10DLC registration). Unchecked by default. */}
-        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-          <label htmlFor="quote-smsConsent" className="flex cursor-pointer items-start gap-3 text-sm leading-relaxed text-slate-700">
-            <input
-              id="quote-smsConsent"
-              type="checkbox"
-              name="smsConsent"
-              checked={values.smsConsent === 'yes'}
-              onChange={(e) => update('smsConsent', e.target.checked ? 'yes' : '')}
-              aria-describedby="quote-smsConsent-links"
-              aria-invalid={errors.smsConsent ? true : undefined}
-              className="mt-1 size-4 shrink-0 accent-navy-900"
-            />
-            <span>
-              <span className="font-semibold text-navy-900">Text me about my quote and shipment (optional). </span>
-              {SMS_CONSENT_TEXT}
-            </span>
-          </label>
-          <p id="quote-smsConsent-links" className="mt-2 pl-7 text-sm text-slate-600">
-            See our{' '}
-            <Link to="/privacy" target="_blank" rel="noopener" className="font-semibold text-navy-700 underline hover:text-accent-700">
-              Privacy Policy<span className="sr-only"> (opens in a new tab)</span>
-            </Link>{' '}
-            and{' '}
-            <Link to="/terms" target="_blank" rel="noopener" className="font-semibold text-navy-700 underline hover:text-accent-700">
-              Terms of Service<span className="sr-only"> (opens in a new tab)</span>
-            </Link>
-            .
-          </p>
-          {errors.smsConsent && <ErrorText id="quote-smsConsent-error">{errors.smsConsent}</ErrorText>}
-        </div>
-
-        {/* If they prefer texts but haven't agreed to receive them, say how we'll reach them instead. */}
-        <div aria-live="polite">
-          {values.contactMethod === 'text' && values.smsConsent !== 'yes' && (
-            <p className="flex gap-3 rounded-lg border border-navy-100 bg-navy-50 p-4 text-sm text-navy-900">
-              <Icon name="info" className="size-5 shrink-0 text-navy-700" />
-              <span>To get your quote by text, check the box above. Otherwise we’ll follow up by email or phone.</span>
+        {submitted && errorCount > 0 && (
+          <div role="alert" className="flex gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+            <Icon name="alert" className="size-5 shrink-0" />
+            <p>
+              Please fix {errorCount === 1 ? 'the highlighted field' : `the ${errorCount} highlighted fields`} below.
             </p>
-          )}
-        </div>
-      </FormGroup>
+          </div>
+        )}
 
-      {/* Route */}
-      <FormGroup legend="Route">
-        <div className="grid gap-5 sm:grid-cols-2">
-          <Field label="Pickup ZIP or city" field="pickup" error={errors.pickup} required>
-            <input type="text" placeholder="e.g. 75201 or Dallas, TX" {...fieldProps('pickup')} />
-          </Field>
-          <Field label="Delivery ZIP or city" field="delivery" error={errors.delivery} required>
-            <input type="text" placeholder="e.g. 85001 or Phoenix, AZ" {...fieldProps('delivery')} />
-          </Field>
-          <Field label="Preferred pickup date" field="pickupDate" error={errors.pickupDate} required>
-            <input type="date" min={todayISO()} {...fieldProps('pickupDate')} />
-          </Field>
-          <Field label="Service type" field="serviceType" error={errors.serviceType} required>
-            <select {...fieldProps('serviceType')}>
-              <option value="">Choose a service…</option>
-              {SERVICE_TYPES.map((v) => (
-                <option key={v} value={v}>
-                  {LABELS.serviceType[v]}
-                </option>
-              ))}
-            </select>
-          </Field>
-        </div>
-      </FormGroup>
+        {status === 'error' && (
+          <div
+            ref={resultRef}
+            tabIndex={-1}
+            role="alert"
+            className="rounded-lg border border-red-200 bg-red-50 p-5 text-red-900 focus:outline-none"
+          >
+            <p className="font-bold">Sorry, we couldn’t send your request.</p>
+            <p className="mt-1">
+              {serverMessage && `${serverMessage} `}
+              Please try again in a moment, or call us at{' '}
+              <a href={site.phoneHref} className="font-bold underline">
+                {site.phone}
+              </a>{' '}
+              and we’ll get your quote started over the phone.
+            </p>
+          </div>
+        )}
 
-      {/* Vehicle */}
-      <FormGroup legend="Vehicle">
-        <div className="grid gap-5 sm:grid-cols-3">
-          <Field label="Year" field="vehicleYear" error={errors.vehicleYear} required>
-            <input type="text" inputMode="numeric" maxLength={4} placeholder="2020" {...fieldProps('vehicleYear')} />
-          </Field>
-          <Field label="Make" field="vehicleMake" error={errors.vehicleMake} required>
-            <input type="text" placeholder="Toyota" {...fieldProps('vehicleMake')} />
-          </Field>
-          <Field label="Model" field="vehicleModel" error={errors.vehicleModel} required>
-            <input type="text" placeholder="Camry" {...fieldProps('vehicleModel')} />
-          </Field>
-        </div>
-        <div className="grid gap-5 sm:grid-cols-2">
+        {/* About you */}
+        <FormGroup legend="About you">
+          <div className="grid gap-5 sm:grid-cols-2">
+            <Field label="Full name" field="name" error={errors.name} required className="sm:col-span-2">
+              <input type="text" autoComplete="name" {...fieldProps('name')} />
+            </Field>
+            <Field label="Email" field="email" error={errors.email} required>
+              <input type="email" autoComplete="email" inputMode="email" {...fieldProps('email')} />
+            </Field>
+            <Field label="Phone" field="phone" error={errors.phone} required>
+              <input type="tel" autoComplete="tel" inputMode="tel" placeholder="(555) 555-5555" {...fieldProps('phone')} />
+            </Field>
+          </div>
           <RadioGroup
-            field="vehicleType"
-            legend="Vehicle type"
-            options={VEHICLE_TYPES.map((v) => ({ value: v, label: LABELS.vehicleType[v] }))}
-            value={values.vehicleType}
-            error={errors.vehicleType}
+            field="contactMethod"
+            legend="How should we contact you?"
+            options={CONTACT_METHODS.map((v) => ({ value: v, label: LABELS.contactMethod[v] }))}
+            value={values.contactMethod}
+            error={errors.contactMethod}
             onChange={update}
           />
-          <RadioGroup
-            field="runs"
-            legend="Does the vehicle run?"
-            options={RUNS_OPTIONS.map((v) => ({ value: v, label: v === 'yes' ? 'Yes' : 'No' }))}
-            value={values.runs}
-            error={errors.runs}
-            onChange={update}
-          />
-        </div>
 
-        {/* Live region so screen readers hear the note when it appears. */}
-        <div aria-live="polite">
-          {extraFee && (
-            <p className="flex gap-3 rounded-lg border border-accent-200 bg-accent-50 p-4 text-sm text-accent-900">
-              <Icon name="info" className="size-5 shrink-0 text-accent-700" />
+          {/* Optional SMS consent (required wording for carrier / 10DLC registration). Unchecked by default. */}
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <label htmlFor="quote-smsConsent" className="flex cursor-pointer items-start gap-3 text-sm leading-relaxed text-slate-700">
+              <input
+                id="quote-smsConsent"
+                type="checkbox"
+                name="smsConsent"
+                checked={values.smsConsent === 'yes'}
+                onChange={(e) => update('smsConsent', e.target.checked ? 'yes' : '')}
+                aria-describedby="quote-smsConsent-links"
+                aria-invalid={errors.smsConsent ? true : undefined}
+                className="mt-1 size-4 shrink-0 accent-navy-900"
+              />
               <span>
-                <strong>Heads up:</strong> an additional fee applies to{' '}
-                {values.vehicleType === 'motorcycle' && values.runs === 'no'
-                  ? 'motorcycles and inoperable vehicles'
-                  : values.vehicleType === 'motorcycle'
-                    ? 'motorcycles'
-                    : 'inoperable vehicles'}
-                . Your dispatcher will include it in your quote.
+                <span className="font-semibold text-navy-900">Text me about my quote and shipment (optional). </span>
+                {SMS_CONSENT_TEXT}
               </span>
+            </label>
+            <p id="quote-smsConsent-links" className="mt-2 pl-7 text-sm text-slate-600">
+              See our{' '}
+              <Link to="/privacy" target="_blank" rel="noopener" className="font-semibold text-navy-700 underline hover:text-accent-700">
+                Privacy Policy<span className="sr-only"> (opens in a new tab)</span>
+              </Link>{' '}
+              and{' '}
+              <Link to="/terms" target="_blank" rel="noopener" className="font-semibold text-navy-700 underline hover:text-accent-700">
+                Terms of Service<span className="sr-only"> (opens in a new tab)</span>
+              </Link>
+              .
             </p>
-          )}
+            {errors.smsConsent && <ErrorText id="quote-smsConsent-error">{errors.smsConsent}</ErrorText>}
+          </div>
+
+          {/* If they prefer texts but haven't agreed to receive them, say how we'll reach them instead. */}
+          <div aria-live="polite">
+            {values.contactMethod === 'text' && values.smsConsent !== 'yes' && (
+              <p className="flex gap-3 rounded-lg border border-navy-100 bg-navy-50 p-4 text-sm text-navy-900">
+                <Icon name="info" className="size-5 shrink-0 text-navy-700" />
+                <span>To get your quote by text, check the box above. Otherwise we’ll follow up by email or phone.</span>
+              </p>
+            )}
+          </div>
+        </FormGroup>
+
+        {/* Route */}
+        <FormGroup legend="Route">
+          <div className="grid gap-5 sm:grid-cols-2">
+            <Field label="Pickup ZIP or city" field="pickup" error={errors.pickup} required>
+              <input type="text" placeholder="e.g. 75201 or Dallas, TX" {...fieldProps('pickup')} />
+            </Field>
+            <Field label="Delivery ZIP or city" field="delivery" error={errors.delivery} required>
+              <input type="text" placeholder="e.g. 85001 or Phoenix, AZ" {...fieldProps('delivery')} />
+            </Field>
+            <Field label="Preferred pickup date" field="pickupDate" error={errors.pickupDate} required>
+              <input type="date" min={todayISO()} {...fieldProps('pickupDate')} />
+            </Field>
+            <Field label="Service type" field="serviceType" error={errors.serviceType} required>
+              <select {...fieldProps('serviceType')}>
+                <option value="">Choose a service…</option>
+                {SERVICE_TYPES.map((v) => (
+                  <option key={v} value={v}>
+                    {LABELS.serviceType[v]}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </div>
+        </FormGroup>
+
+        {/* Vehicle */}
+        <FormGroup legend="Vehicle">
+          <div className="grid gap-5 sm:grid-cols-3">
+            <Field label="Year" field="vehicleYear" error={errors.vehicleYear} required>
+              <input type="text" inputMode="numeric" maxLength={4} placeholder="2020" {...fieldProps('vehicleYear')} />
+            </Field>
+            <Field label="Make" field="vehicleMake" error={errors.vehicleMake} required>
+              <input type="text" placeholder="Toyota" {...fieldProps('vehicleMake')} />
+            </Field>
+            <Field label="Model" field="vehicleModel" error={errors.vehicleModel} required>
+              <input type="text" placeholder="Camry" {...fieldProps('vehicleModel')} />
+            </Field>
+          </div>
+          <div className="grid gap-5 sm:grid-cols-2">
+            <RadioGroup
+              field="vehicleType"
+              legend="Vehicle type"
+              options={VEHICLE_TYPES.map((v) => ({ value: v, label: LABELS.vehicleType[v] }))}
+              value={values.vehicleType}
+              error={errors.vehicleType}
+              onChange={update}
+            />
+            <RadioGroup
+              field="runs"
+              legend="Does the vehicle run?"
+              options={RUNS_OPTIONS.map((v) => ({ value: v, label: v === 'yes' ? 'Yes' : 'No' }))}
+              value={values.runs}
+              error={errors.runs}
+              onChange={update}
+            />
+          </div>
+
+          {/* Live region so screen readers hear the note when it appears. */}
+          <div aria-live="polite">
+            {extraFee && (
+              <p className="flex gap-3 rounded-lg border border-accent-200 bg-accent-50 p-4 text-sm text-accent-900">
+                <Icon name="info" className="size-5 shrink-0 text-accent-700" />
+                <span>
+                  <strong>Heads up:</strong> an additional fee applies to{' '}
+                  {values.vehicleType === 'motorcycle' && values.runs === 'no'
+                    ? 'motorcycles and inoperable vehicles'
+                    : values.vehicleType === 'motorcycle'
+                      ? 'motorcycles'
+                      : 'inoperable vehicles'}
+                  . Your dispatcher will include it in your quote.
+                </span>
+              </p>
+            )}
+          </div>
+        </FormGroup>
+
+        <Field label="Additional notes" field="notes" error={errors.notes} hint="Gate codes, modifications, timing, anything we should know.">
+          <textarea rows={4} {...fieldProps('notes')} />
+        </Field>
+
+        {/* Honeypot: hidden from people and screen readers; bots tend to fill it in. */}
+        <div aria-hidden="true" className="absolute -left-[9999px] h-px w-px overflow-hidden">
+          <label htmlFor="quote-honeypot">Leave this field blank</label>
+          <input
+            id="quote-honeypot"
+            type="text"
+            name="honeypot"
+            tabIndex={-1}
+            autoComplete="off"
+            value={values.honeypot}
+            onChange={onChange}
+          />
         </div>
-      </FormGroup>
 
-      <Field label="Additional notes" field="notes" error={errors.notes} hint="Gate codes, modifications, timing, anything we should know.">
-        <textarea rows={4} {...fieldProps('notes')} />
-      </Field>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <Button type="submit" size="lg" disabled={status === 'submitting'}>
+            {status === 'submitting' ? 'Sending…' : 'Get My Free Quote'}
+          </Button>
+          <p className="text-sm text-slate-500">No obligation. We never sell your information.</p>
+        </div>
+      </form>
 
-      {/* Honeypot: hidden from people and screen readers; bots tend to fill it in. */}
-      <div aria-hidden="true" className="absolute -left-[9999px] h-px w-px overflow-hidden">
-        <label htmlFor="quote-honeypot">Leave this field blank</label>
-        <input
-          id="quote-honeypot"
-          type="text"
-          name="honeypot"
-          tabIndex={-1}
-          autoComplete="off"
-          value={values.honeypot}
-          onChange={onChange}
-        />
+      <QuoteUnavailableDialog dialogRef={unavailableRef} values={values} />
+    </>
+  );
+}
+
+/* ---------- "Online quotes aren't available yet" popup ---------- */
+
+/** Builds a mailto: link with whatever the visitor already typed, so their work isn't lost. */
+function quoteMailto(q: QuoteRequest): string {
+  const lines: [string, string][] = [
+    ['Name', q.name],
+    ['Email', q.email],
+    ['Phone', q.phone],
+    ['Preferred contact', q.contactMethod ? LABELS.contactMethod[q.contactMethod] : ''],
+    ['Pickup', q.pickup],
+    ['Delivery', q.delivery],
+    ['Preferred pickup date', q.pickupDate],
+    ['Service', q.serviceType ? LABELS.serviceType[q.serviceType] : ''],
+    ['Vehicle', [q.vehicleYear, q.vehicleMake, q.vehicleModel].filter(Boolean).join(' ')],
+    ['Vehicle type', q.vehicleType ? LABELS.vehicleType[q.vehicleType] : ''],
+    ['Runs?', q.runs ? LABELS.runs[q.runs] : ''],
+    ['Notes', q.notes],
+  ];
+  const filled = lines.filter(([, value]) => value.trim());
+  const body = [
+    'Hi Fifth Wheel, I’d like a quote.',
+    '',
+    ...(filled.length ? filled.map(([label, value]) => `${label}: ${value}`) : ['(Add your vehicle, pickup and delivery details here.)']),
+  ].join('\n');
+  return `mailto:${site.email}?subject=${encodeURIComponent('Quote request')}&body=${encodeURIComponent(body)}`;
+}
+
+function QuoteUnavailableDialog({
+  dialogRef,
+  values,
+}: {
+  dialogRef: RefObject<HTMLDialogElement | null>;
+  values: QuoteRequest;
+}) {
+  const close = () => dialogRef.current?.close();
+
+  return (
+    <dialog
+      ref={dialogRef}
+      aria-labelledby="quote-unavailable-title"
+      aria-describedby="quote-unavailable-text"
+      // Clicking the dimmed backdrop (outside the panel) closes the popup.
+      onClick={(e) => {
+        if (e.target === e.currentTarget) close();
+      }}
+      className="m-auto w-[calc(100%-2rem)] max-w-lg rounded-3xl bg-white p-0 text-left shadow-xl backdrop:bg-navy-950/60"
+    >
+      <div className="p-6 sm:p-8">
+        <span className="inline-flex size-12 items-center justify-center rounded-full bg-accent-100 text-accent-700">
+          <Icon name="info" className="size-6" />
+        </span>
+        <h2 id="quote-unavailable-title" className="mt-4 text-2xl font-extrabold text-navy-900">
+          Online quotes are coming soon
+        </h2>
+        <p id="quote-unavailable-text" className="mt-3 text-slate-600">
+          Thanks for your interest! This feature isn’t complete yet, so your request was <strong>not</strong> sent.
+          Please call or email us and we’ll get your quote started. Your answers are still saved in the form.
+        </p>
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+          <Button href={site.phoneHref}>
+            <Icon name="phone" className="size-4" />
+            Call {site.phone}
+          </Button>
+          <Button href={quoteMailto(values)} variant="secondary">
+            <Icon name="mail" className="size-4" />
+            Email us these details
+          </Button>
+        </div>
+        <button
+          type="button"
+          onClick={close}
+          autoFocus
+          className="mt-5 rounded text-sm font-semibold text-slate-600 underline hover:text-navy-900"
+        >
+          Close
+        </button>
       </div>
-
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-        <Button type="submit" size="lg" disabled={status === 'submitting'}>
-          {status === 'submitting' ? 'Sending…' : 'Get My Free Quote'}
-        </Button>
-        <p className="text-sm text-slate-500">No obligation. We never sell your information.</p>
-      </div>
-    </form>
+    </dialog>
   );
 }
 

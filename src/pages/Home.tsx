@@ -201,31 +201,33 @@ export default function Home() {
         </div>
       </Section>
 
-      {/* Reviews preview */}
-      <Section
-        id="reviews"
-        tone="muted"
-        eyebrow="Reviews"
-        title="What our customers say"
-        intro="Straight talk from the people we’ve moved."
-      >
-        <div className="grid gap-6 md:grid-cols-3">
-          {reviews.slice(0, 3).map((review, i) => (
-            <FadeIn key={i} delay={i * 100}>
-              <TestimonialCard review={review} />
-            </FadeIn>
-          ))}
-        </div>
-        <div className="mt-10 text-center">
-          <Link
-            to="/reviews"
-            className="inline-flex items-center gap-2 rounded font-heading font-bold text-navy-800 hover:text-accent-700"
-          >
-            Read more reviews
-            <Icon name="arrowRight" className="size-5" />
-          </Link>
-        </div>
-      </Section>
+      {/* Reviews preview (hidden until there are real reviews) */}
+      {reviews.length > 0 && (
+        <Section
+          id="reviews"
+          tone="muted"
+          eyebrow="Reviews"
+          title="What our customers say"
+          intro="Straight talk from the people we’ve moved."
+        >
+          <div className="grid gap-6 md:grid-cols-3">
+            {reviews.slice(0, 3).map((review, i) => (
+              <FadeIn key={i} delay={i * 100}>
+                <TestimonialCard review={review} />
+              </FadeIn>
+            ))}
+          </div>
+          <div className="mt-10 text-center">
+            <Link
+              to="/reviews"
+              className="inline-flex items-center gap-2 rounded font-heading font-bold text-navy-800 hover:text-accent-700"
+            >
+              Read more reviews
+              <Icon name="arrowRight" className="size-5" />
+            </Link>
+          </div>
+        </Section>
+      )}
 
       <CtaBanner />
     </>

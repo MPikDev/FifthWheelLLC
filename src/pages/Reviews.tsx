@@ -22,6 +22,11 @@ export default function Reviews() {
       </PageHero>
 
       <Section tone="muted">
+        {reviews.length === 0 && (
+          <p className="mx-auto max-w-2xl rounded-2xl bg-white p-8 text-center text-lg text-slate-600 shadow-sm ring-1 ring-slate-200">
+            Customer reviews are coming soon.
+          </p>
+        )}
         {hasSamples && (
           <p className="mx-auto mb-10 max-w-3xl rounded-lg border border-dashed border-slate-400 bg-white p-4 text-center text-sm text-slate-600">
             The reviews below are samples that show how this page will look. They’ll be replaced with real customer
@@ -37,7 +42,7 @@ export default function Reviews() {
         </div>
       </Section>
 
-      <CtaBanner title="Join our happy customers" />
+      <CtaBanner title={reviews.length > 0 ? 'Join our happy customers' : undefined} />
     </>
   );
 }
